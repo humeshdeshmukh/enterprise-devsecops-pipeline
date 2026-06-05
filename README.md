@@ -9,6 +9,12 @@
 
 [![DevSecOps CI/CD Pipeline](https://github.com/humeshdeshmukh/enterprise-devsecops-pipeline/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/humeshdeshmukh/enterprise-devsecops-pipeline/actions/workflows/ci-cd.yml)
 
+## 📸 Screenshots & Visuals
+
+| Local Pipeline Execution (`make all`) | Kubernetes Pods & Service Status | Microservice Endpoints (Health & Metrics) |
+| --- | --- | --- |
+| ![Local Pipeline Success](assets/pipeline-success.png) | ![K8s Pods Status](assets/k8s-pods.png) | ![Health & Metrics curl](assets/metrics-health.png) |
+
 A production-grade, portfolio-ready **DevSecOps CI/CD Pipeline** built to automate the development, testing, security auditing, containerization, and deployment of a Python-based Flask Product Catalog microservice onto a local Kubernetes (Minikube) cluster.
 
 This repository demonstrates modern software engineering and operations best practices, showcasing robust **Shift-Left security scanning** (SAST, SCA, container vulnerability scanning), infrastructure-as-code packaging, and automated local/remote validation mechanisms.
