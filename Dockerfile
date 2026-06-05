@@ -27,9 +27,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Upgrade pip and uninstall setuptools to eliminate pre-installed base image vulnerabilities
+# Upgrade pip and uninstall setuptools/wheel to eliminate pre-installed base image vulnerabilities
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip uninstall -y setuptools
+    pip uninstall -y setuptools wheel
 
 # Create a system group and user with specific UID/GID for security
 RUN groupadd -g 10001 appgroup && \
