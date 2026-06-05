@@ -171,4 +171,4 @@ def create_product():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     # In production, we run through gunicorn, but we keep this for local run
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)  # nosec B104
