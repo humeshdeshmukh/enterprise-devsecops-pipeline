@@ -123,6 +123,7 @@ docker run --rm \
     -v "$(pwd)":/apps \
     aquasec/trivy:latest fs /apps \
     --severity HIGH,CRITICAL \
+    --timeout 15m \
     --exit-code 0 # Set to 1 in strict pipelines to break build on vuln
 echo -e "${GREEN}[OK] SAST and SCA scans completed successfully.${NC}"
 
@@ -140,6 +141,7 @@ docker run --rm \
     -v ~/.cache:/root/.cache/ \
     aquasec/trivy:latest image product-catalog:latest \
     --severity HIGH,CRITICAL \
+    --timeout 15m \
     --exit-code 0 # Set to 1 in strict pipelines to break build on vuln
 echo -e "${GREEN}[OK] Docker image built and verified securely.${NC}"
 

@@ -28,13 +28,13 @@ scan:
 	./venv/bin/bandit -r app/ -ll -ii
 	./venv/bin/safety check -r app/requirements.txt || echo "Safety scan finished with warnings."
 	@echo "Running Trivy filesystem scan..."
-	docker run --rm -v ~/.cache:/root/.cache/ -v "$$(pwd)":/apps aquasec/trivy:latest fs /apps --severity HIGH,CRITICAL
+	docker run --rm -v ~/.cache:/root/.cache/ -v "$$(pwd)":/apps aquasec/trivy:latest fs /apps --severity HIGH,CRITICAL --timeout 15m
 
 build:
 	@echo "Building docker container..."
 	docker build -t product-catalog:latest .
 	@echo "Scanning docker container..."
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ~/.cache:/root/.cache/ aquasec/trivy:latest image product-catalog:latest --severity HIGH,CRITICAL
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ~/.cache:/root/.cache/ aquasec/trivy:latest image product-catalog:latest --severity HIGH,CRITICAL --timeout 15m
 
 deploy:
 	@echo "Deploying application to local Minikube cluster..."
