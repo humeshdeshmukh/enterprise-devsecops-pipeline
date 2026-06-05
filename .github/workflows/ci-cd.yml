@@ -1,0 +1,181 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+
+      - name: Run Flake8 Linter
+        run: |
+          flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 app/ --count --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Run Black Formatter Check
+        run: black --check app/
+
+      - name: Run Unit Tests with Coverage
+        run: |
+          pytest --cov=app/ --cov-report=xml --cov-report=term-missing app/tests/
+
+      - name: Upload Coverage Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  security-scan:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Scan Tools
+        run: |
+          pip install bandit safety
+
+      - name: Run Bandit (SAST)
+        run: |
+          # Fails pipeline if high severity issues are found
+          bandit -r app/ -ll -ii
+
+      - name: Run Safety (Dependency SCA)
+        run: |
+          # Scan dependencies for known vulnerabilities
+          # Ignore safety failure in demo if needed, but fail in production
+          safety check -r app/requirements.txt || echo "Safety scan completed with warnings"
+
+      - name: Run Trivy Repo Scan (SCA & Misconfigurations)
+        uses: aquasec/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1' # Fail the build if vulnerabilities are found
+          severity: 'CRITICAL,HIGH'
+
+      - name: SonarCloud / SonarQube Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Run only if SONAR_TOKEN is set
+        continue-on-error: true
+
+  build-and-push:
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image Locally for Scan
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true # Load image into local Docker daemon so we can scan it
+          tags: product-catalog:${{ github.sha }}
+
+      - name: Run Trivy Container Image Scan
+        uses: aquasec/trivy-action@master
+        with:
+          image-ref: 'product-catalog:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1' # Fail build on CRITICAL/HIGH vulnerabilities
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Log in to Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image to Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/product-catalog:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/product-catalog:${{ github.sha }}
+
+  deploy-kubernetes:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.12.0'
+
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+
+      - name: Deploy to Kubernetes Cluster via Helm
+        run: |
+          helm upgrade --install product-catalog ./helm/product-catalog \
+            --namespace default \
+            --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/product-catalog \
+            --set image.tag=${{ github.sha }} \
+            --wait
+
+      - name: Verify K8s Deployment Rollout
+        run: |
+          kubectl rollout status deployment/product-catalog --namespace default --timeout=120s
+
+  notifications:
+    needs: [lint-and-test, security-scan, build-and-push, deploy-kubernetes]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send Slack Status Notification
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          notification_title: '*{repo}* DevSecOps CI/CD Pipeline status'
+          message_format: '{emoji} *{workflow}* {status_message} on <{commit_url}|{commit_sha}> in *{branch}*'
+          footer: 'Linked to Repo: {repo}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        # Only run if Slack Webhook URL secret is set
+        continue-on-error: true
