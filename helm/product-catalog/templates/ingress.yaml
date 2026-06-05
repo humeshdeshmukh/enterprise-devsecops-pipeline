@@ -23,7 +23,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "product-catalog.fullname" . }}
+                name: {{ include "product-catalog.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
           {{- end }}
