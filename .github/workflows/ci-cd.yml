@@ -80,6 +80,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: SonarCloud / SonarQube Scan
+        if: secrets.SONAR_TOKEN != ''
         uses: sonarsource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -117,14 +118,14 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Log in to Registry
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Docker Image to Registry
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != ''
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -136,7 +137,7 @@ jobs:
   deploy-kubernetes:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.KUBECONFIG != ''
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
