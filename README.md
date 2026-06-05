@@ -162,7 +162,7 @@ After the pipeline run completes successfully, you can manually interact with th
 1. **Check Pod Status**:
 
     ```bash
-    kubectl get pods -n default -l app=product-catalog
+    kubectl get pods -n default -l app.kubernetes.io/name=product-catalog
     ```
 
 2. **Access Health Endpoint**:
