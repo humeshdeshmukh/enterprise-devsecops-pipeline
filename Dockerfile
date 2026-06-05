@@ -27,6 +27,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Upgrade pip and uninstall setuptools to eliminate pre-installed base image vulnerabilities
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip uninstall -y setuptools
+
 # Create a system group and user with specific UID/GID for security
 RUN groupadd -g 10001 appgroup && \
     useradd -r -u 10001 -g appgroup -d /app -s /sbin/nologin -c "Application User" appuser
