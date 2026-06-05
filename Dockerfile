@@ -36,14 +36,14 @@ RUN groupadd -g 10001 appgroup && \
     useradd -r -u 10001 -g appgroup -d /app -s /sbin/nologin -c "Application User" appuser
 
 # Copy installed packages from the builder stage
-COPY --from=builder /root/.local /home/appuser/.local
+COPY --from=builder /root/.local /app/.local
 COPY app/ /app/
 
 # Ensure all files are owned by the non-root app user
-RUN chown -R appuser:appgroup /app /home/appuser
+RUN chown -R appuser:appgroup /app
 
 # Add PATH environment variable to locate installed local pip packages
-ENV PATH=/home/appuser/.local/bin:$PATH
+ENV PATH=/app/.local/bin:$PATH
 
 # Expose the application port
 EXPOSE 5000
