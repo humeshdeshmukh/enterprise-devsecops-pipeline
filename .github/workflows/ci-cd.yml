@@ -71,7 +71,7 @@ jobs:
           safety check -r app/requirements.txt || echo "Safety scan completed with warnings"
 
       - name: Run Trivy Repo Scan (SCA & Misconfigurations)
-        uses: aquasec/trivy-action@master
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -108,7 +108,7 @@ jobs:
           tags: product-catalog:${{ github.sha }}
 
       - name: Run Trivy Container Image Scan
-        uses: aquasec/trivy-action@master
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'product-catalog:${{ github.sha }}'
           format: 'table'

@@ -119,6 +119,7 @@ safety check -r app/requirements.txt || echo -e "${YELLOW}[WARNING] Safety scan 
 echo -e "${YELLOW}Running Trivy filesystem vulnerability scan via Docker...${NC}"
 # Run Trivy fs scan inside a Docker container
 docker run --rm \
+    -v ~/.cache:/root/.cache/ \
     -v "$(pwd)":/apps \
     aquasec/trivy:latest fs /apps \
     --severity HIGH,CRITICAL \

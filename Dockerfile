@@ -44,9 +44,9 @@ ENV PATH=/home/appuser/.local/bin:$PATH
 # Expose the application port
 EXPOSE 5000
 
-# Set up health check instructions for container runtime
+# Set up health check instructions for container runtime using built-in urllib
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/health || exit 1
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)" || exit 1
 
 # Run the container under the non-root user account
 USER 10001:10001

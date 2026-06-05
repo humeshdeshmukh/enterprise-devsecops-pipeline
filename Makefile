@@ -28,7 +28,7 @@ scan:
 	./venv/bin/bandit -r app/ -ll -ii
 	./venv/bin/safety check -r app/requirements.txt || echo "Safety scan finished with warnings."
 	@echo "Running Trivy filesystem scan..."
-	docker run --rm -v "$$(pwd)":/apps aquasec/trivy:latest fs /apps --severity HIGH,CRITICAL
+	docker run --rm -v ~/.cache:/root/.cache/ -v "$$(pwd)":/apps aquasec/trivy:latest fs /apps --severity HIGH,CRITICAL
 
 build:
 	@echo "Building docker container..."
